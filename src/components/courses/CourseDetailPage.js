@@ -1,18 +1,41 @@
-import React from 'react';
-import { ArrowLeft, Book } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, Book, Users } from 'lucide-react';
 import StudyGroupCard from '../study-groups/StudyGroupCard';
-import { mockData } from '../../data/mockData';
 
 const CourseDetailPage = ({ courseId, onNavigate }) => {
-  const course = mockData.courses.find(c => c.id === courseId);
+  const [course, setCourse] = useState(null);
+  const [studyGroupsForCourse, setStudyGroupsForCourse] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  if (!course) {
-    return <div className="p-8">Course not found.</div>;
-  }
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const courseResponse = await fetch(`http://localhost:3001/api/courses/${courseId}`);
+        const studyGroupsResponse = await fetch(`http://localhost:3001/api/study-groups`);
 
-  const studyGroupsForCourse = mockData.studyGroups.filter(
-    sg => sg.courseId === courseId
-  );
+        if (!courseResponse.ok || !studyGroupsResponse.ok) {
+          throw new Error('Failed to fetch data.');
+        }
+
+        const courseData = await courseResponse.json();
+        const allStudyGroups = await studyGroupsResponse.json();
+
+        setCourse(courseData);
+        setStudyGroupsForCourse(allStudyGroups.filter(sg => sg.courseId === courseId));
+      } catch (err) {
+        console.error("Error fetching course detail data:", err);
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, [courseId]);
+
+  if (isLoading) return <div className="p-8 text-center">Loading course details...</div>;
+  if (error) return <div className="p-8 text-center text-red-500">Error: {error}</div>;
+  if (!course) return <div className="p-8">Course not found.</div>;
 
   return (
     <div className="p-8 space-y-8">

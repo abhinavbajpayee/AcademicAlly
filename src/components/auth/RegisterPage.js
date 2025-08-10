@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { mockData } from '../../data/mockData';
 
 const RegisterPage = ({ onNavigate }) => {
   const { login } = useAuth();
@@ -9,15 +8,30 @@ const RegisterPage = ({ onNavigate }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
-    if (username && email && password) {
-      const newUser = { id: `user${mockData.users.length + 1}`, name: username };
-      mockData.users.push(newUser);
-      login(newUser);
-      onNavigate('dashboard');
-    } else {
+    if (!username || !email || !password) {
       setError('Please fill out all fields.');
+      return;
+    }
+
+    try {
+      const response = await fetch('http://localhost:3001/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, email, password }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Registration failed.');
+      }
+
+      const user = await response.json();
+      login(user);
+      onNavigate('dashboard');
+    } catch (err) {
+      console.error('Registration error:', err);
+      setError(err.message);
     }
   };
 

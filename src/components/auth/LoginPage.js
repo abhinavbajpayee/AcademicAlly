@@ -1,25 +1,34 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { mockData } from '../../data/mockData';
-
 const LoginPage = ({ onNavigate }) => {
   const { login } = useAuth();
   const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    if (username && password) {
-      const user = mockData.users.find(u => u.name.toLowerCase() === username.toLowerCase());
-      if (user) {
-        login(user);
-        onNavigate('dashboard');
-      } else {
-        setError('Invalid username or password.');
+    if (!username) {
+      setError('Please enter a username.');
+      return;
+    }
+
+    try {
+      const response = await fetch('http://localhost:3001/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Login failed. Please check your username.');
       }
-    } else {
-      setError('Please enter a username and password.');
+
+      const user = await response.json();
+      login(user);
+      onNavigate('dashboard');
+    } catch (err) {
+      console.error('Login error:', err);
+      setError(err.message);
     }
   };
 
@@ -35,16 +44,6 @@ const LoginPage = ({ onNavigate }) => {
               id="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-          <div>
-            <label className="block text-gray-700 font-medium mb-1" htmlFor="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
               className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
