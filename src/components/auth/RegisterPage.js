@@ -5,6 +5,7 @@ const RegisterPage = ({ onNavigate }) => {
   const { login } = useAuth();
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
+  const [role, setRole] = useState('student'); // 👈
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
@@ -15,23 +16,23 @@ const RegisterPage = ({ onNavigate }) => {
       return;
     }
 
+    // Frontend-only: make local user
+    const user = {
+      id: `u_${username.toLowerCase().replace(/\s+/g, '')}`,
+      name: username,
+      email,
+      role,
+    };
+
     try {
-      const response = await fetch('http://localhost:3001/api/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, email, password }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Registration failed.');
-      }
-
-      const user = await response.json();
+      // If you want backend later:
+      // const response = await fetch('http://localhost:3001/api/register', { ... })
+      // const serverUser = await response.json();
       login(user);
       onNavigate('dashboard');
     } catch (err) {
       console.error('Registration error:', err);
-      setError(err.message);
+      setError(err.message || 'Registration failed.');
     }
   };
 
@@ -50,6 +51,7 @@ const RegisterPage = ({ onNavigate }) => {
               className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
+
           <div>
             <label className="block text-gray-700 font-medium mb-1" htmlFor="email">Email</label>
             <input
@@ -60,6 +62,7 @@ const RegisterPage = ({ onNavigate }) => {
               className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
+
           <div>
             <label className="block text-gray-700 font-medium mb-1" htmlFor="password">Password</label>
             <input
@@ -70,6 +73,30 @@ const RegisterPage = ({ onNavigate }) => {
               className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
+
+          {/* Role */}
+          <div>
+            <label className="block text-gray-700 font-medium mb-1">Account Type</label>
+            <div className="flex gap-3">
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  checked={role === 'student'}
+                  onChange={() => setRole('student')}
+                />
+                Student
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  checked={role === 'teacher'}
+                  onChange={() => setRole('teacher')}
+                />
+                Teacher
+              </label>
+            </div>
+          </div>
+
           {error && <p className="text-red-500 text-sm">{error}</p>}
           <button
             type="submit"
@@ -77,6 +104,17 @@ const RegisterPage = ({ onNavigate }) => {
           >
             Create Account
           </button>
+
+          <p className="text-sm text-gray-600 text-center">
+            Already have an account?{' '}
+            <button
+              type="button"
+              onClick={() => onNavigate('login')}
+              className="text-indigo-600 hover:underline"
+            >
+              Login
+            </button>
+          </p>
         </form>
       </div>
     </div>

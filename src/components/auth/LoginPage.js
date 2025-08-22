@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
+
 const LoginPage = ({ onNavigate }) => {
   const { login } = useAuth();
   const [username, setUsername] = useState('');
+  const [role, setRole] = useState('student'); // 👈 NEW
   const [error, setError] = useState('');
 
   const handleLogin = async (e) => {
@@ -12,23 +14,22 @@ const LoginPage = ({ onNavigate }) => {
       return;
     }
 
+    // 🔥 Frontend-only demo: directly create a user object, optionally call backend later
+    const user = {
+      id: `u_${username.toLowerCase().replace(/\s+/g, '')}`,
+      name: username,
+      role, // 'student' | 'teacher'
+    };
+
     try {
-      const response = await fetch('http://localhost:3001/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Login failed. Please check your username.');
-      }
-
-      const user = await response.json();
+      // if you still want server: uncomment
+      // const response = await fetch('http://localhost:3001/api/login', { ... })
+      // const serverUser = await response.json();
       login(user);
       onNavigate('dashboard');
     } catch (err) {
       console.error('Login error:', err);
-      setError(err.message);
+      setError(err.message || 'Login failed.');
     }
   };
 
@@ -47,6 +48,30 @@ const LoginPage = ({ onNavigate }) => {
               className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
+
+          {/* Role */}
+          <div>
+            <label className="block text-gray-700 font-medium mb-1">Login as</label>
+            <div className="flex gap-3">
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  checked={role === 'student'}
+                  onChange={() => setRole('student')}
+                />
+                Student
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  checked={role === 'teacher'}
+                  onChange={() => setRole('teacher')}
+                />
+                Teacher
+              </label>
+            </div>
+          </div>
+
           {error && <p className="text-red-500 text-sm">{error}</p>}
           <button
             type="submit"
@@ -54,6 +79,17 @@ const LoginPage = ({ onNavigate }) => {
           >
             Sign In
           </button>
+
+          <p className="text-sm text-gray-600 text-center">
+            New here?{' '}
+            <button
+              type="button"
+              onClick={() => onNavigate('register')}
+              className="text-indigo-600 hover:underline"
+            >
+              Create an account
+            </button>
+          </p>
         </form>
       </div>
     </div>
