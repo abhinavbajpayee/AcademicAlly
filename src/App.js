@@ -1,5 +1,9 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "./context/AuthContext";
+import CareerAdvisor from "./components/career/CareerAdvisor";
+import InternshipBoard from "./components/career/InternshipBoard";
+import MentorshipRooms from "./components/career/MentorshipRooms";
+import CareerAnalytics from "./components/career/CareerAnalytics";
 
 // Shared
 import Navbar from "./components/shared/Navbar";
@@ -18,7 +22,10 @@ import StudyGroupsPage from "./components/study-groups/StudyGroupsPage";
 import StudyGroupDetailPage from "./components/study-groups/StudyGroupDetailPage";
 
 // AI
-import AIPage from "./components/ai/AIPage";
+import AITutor from "./components/ai/AITutor";
+
+// Dev Seeder (optional) - only mount in development
+import DevSeeder from "./components/dev/DevSeeder";
 
 // Auth
 import LoginPage from "./components/auth/LoginPage";
@@ -35,9 +42,27 @@ import TeacherClassesPage from "./components/pages/TeacherClassesPage";
 
 const App = () => {
   const [currentPath, setCurrentPath] = useState("dashboard");
-  const { user } = useAuth();
+  // destructure logout if available from auth context
+  const { user, logout } = useAuth();
 
-  const handleNavigate = (path) => {
+  const handleNavigate = async (path) => {
+    // LOGOUT handling
+    if (path === "logout") {
+      if (!window.confirm("Are you sure you want to sign out?")) return;
+      try {
+        if (typeof logout === "function") {
+          await logout();
+        } else {
+          // fallback: clear app-specific keys (adjust if you use different keys)
+          try { localStorage.removeItem("auth_token"); } catch (e) {}
+        }
+      } catch (err) {
+        console.error("Logout error:", err);
+      }
+      setCurrentPath("login");
+      return;
+    }
+
     // Guard teacher-only route
     if (path === "add-course") {
       if (!user) return setCurrentPath("login");
@@ -98,9 +123,22 @@ const App = () => {
           />
         );
 
+      // ===== Career / Internships / Mentorships =====
+      case "career-advisor":
+        return <CareerAdvisor onNavigate={handleNavigate} />;
+
+      case "internships":
+        return <InternshipBoard />;
+
+      case "mentorships":
+        return <MentorshipRooms />;
+
+      case "career-analytics":
+        return <CareerAnalytics />;
+
       // ===== AI =====
       case "ai-tutor":
-        return <AIPage />;
+        return <AITutor onNavigate={handleNavigate} />;
 
       // ===== Student pages =====
       case "profile":
@@ -129,7 +167,7 @@ const App = () => {
       default:
         return <div className="p-8">Page not found.</div>;
     }
-  }; // <-- properly close renderContent
+  }; // <-- properly closed renderContent
 
   // If logged in and currently on auth routes, bounce to dashboard
   useEffect(() => {
@@ -138,9 +176,23 @@ const App = () => {
     }
   }, [user, currentPath]);
 
+  // Expose a simple dev navigator (optional) so you can run `window.__appNavigate("internships")` from console
+  useEffect(() => {
+    if (process.env.NODE_ENV === "development") {
+      window.__appNavigate = (p) => setCurrentPath(p);
+    }
+    return () => {
+      if (window.__appNavigate) delete window.__appNavigate;
+    };
+  }, []);
+
   return (
     <div className="flex min-h-screen bg-gray-100 font-sans antialiased text-gray-800">
       <Navbar currentPath={currentPath} onNavigate={handleNavigate} />
+
+      {/* DevSeeder auto-seeds sample data in development; remove in production */}
+      {process.env.NODE_ENV === "development" && <DevSeeder />}
+
       <div className="flex-grow pl-64 transition-all duration-300">
         <div className="p-8">{renderContent()}</div>
       </div>
